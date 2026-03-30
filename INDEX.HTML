@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic AI Stress Simulator — PwC</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #E05A1E;
+    --orange-light: #F4845F;
+    --orange-dim: #3A1A0A;
+    --red: #E53935;
+    --red-dim: #3B0F0F;
+    --green: #2ECC8D;
+    --green-dim: #0A2E1F;
+    --yellow: #F5C842;
+    --bg: #0C0C0E;
+    --surface: #141418;
+    --surface2: #1C1C22;
+    --border: rgba(255,255,255,0.07);
+    --text: #E8E6DE;
+    --muted: #6B6A65;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --body: 'DM Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .everything { position: relative; z-index: 1; }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 40px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(12,12,14,0.9);
+    backdrop-filter: blur(12px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo { display: flex; align-items: center; gap: 14px; }
+
+  .pwc-mark {
+    width: 36px; height: 36px;
+    background: var(--orange);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display);
+    font-size: 13px; font-weight: 800;
+    color: white; letter-spacing: -0.5px;
+  }
+
+  .logo-text { font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .logo-sub  { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .header-pill {
+    font-family: var(--mono); font-size: 11px; color: var(--orange);
+    border: 1px solid var(--orange); padding: 4px 12px;
+    border-radius: 100px; letter-spacing: 0.5px;
+  }
+
+  .hero { padding: 60px 40px 40px; text-align: center; max-width: 800px; margin: 0 auto; }
+  .hero-eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--orange); margin-bottom: 16px; }
+  .hero-title { font-family: var(--display); font-size: clamp(32px, 5vw, 52px); font-weight: 800; line-height: 1.05; color: var(--text); margin-bottom: 16px; letter-spacing: -1px; }
+  .hero-title span { color: var(--orange); }
+  .hero-sub { font-size: 15px; color: var(--muted); line-height: 1.7; max-width: 520px; margin: 0 auto 40px; font-weight: 300; }
+
+  .scenario-bar { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding: 0 40px; margin-bottom: 48px; }
+
+  .sc-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 22px; cursor: pointer; color: var(--muted);
+    font-family: var(--body); font-size: 13px; font-weight: 500;
+    transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+    min-width: 180px; text-align: left;
+  }
+  .sc-btn:hover  { border-color: var(--orange); color: var(--text); background: var(--surface2); }
+  .sc-btn.active { border-color: var(--orange); background: var(--orange-dim); color: var(--orange-light); }
+  .sc-icon { font-size: 20px; flex-shrink: 0; }
+  .sc-info { flex: 1; }
+  .sc-name { font-weight: 500; font-size: 13px; display: block; }
+  .sc-tag  { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+  .sc-btn.active .sc-tag { color: var(--orange); }
+
+  .stage {
+    display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0;
+    max-width: 1100px; margin: 0 auto; padding: 0 40px 60px; align-items: start;
+  }
+
+  .system-col { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; }
+  .system-col.ungoverned { border-color: rgba(229,57,53,0.3); }
+  .system-col.governed   { border-color: rgba(46,204,141,0.3); }
+
+  .sys-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .sys-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .sys-dot.red   { background: var(--red);   box-shadow: 0 0 8px var(--red); }
+  .sys-dot.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .sys-label { font-family: var(--display); font-size: 14px; font-weight: 700; letter-spacing: 0.3px; }
+  .sys-label.red   { color: #FF6B6B; }
+  .sys-label.green { color: var(--green); }
+  .sys-sublabel { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 0.5px; }
+
+  .event-log { padding: 16px; min-height: 420px; display: flex; flex-direction: column; gap: 10px; font-family: var(--mono); }
+
+  .log-entry {
+    border-radius: 8px; padding: 10px 14px; font-size: 12px; line-height: 1.6;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    border-left: 3px solid transparent;
+  }
+  .log-entry.show { opacity: 1; transform: translateY(0); }
+  .log-entry.info       { background: var(--surface2); border-color: var(--muted); color: var(--muted); }
+  .log-entry.error      { background: var(--red-dim);  border-color: var(--red);   color: #FF8A80; }
+  .log-entry.cascade    { background: #2A0808; border-color: #8B0000; color: #FF5252; font-weight: 500; }
+  .log-entry.warning    { background: #2A1F00; border-color: var(--yellow); color: var(--yellow); }
+  .log-entry.success    { background: var(--green-dim); border-color: var(--green); color: #80FFB8; }
+  .log-entry.checkpoint { background: #0A2A1A; border-color: #1DB87A; color: #2ECC8D; font-weight: 500; }
+  .log-time { color: var(--muted); margin-right: 6px; font-size: 10px; }
+
+  .vs-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 28px; gap: 8px; }
+  .vs-badge { font-family: var(--display); font-size: 12px; font-weight: 800; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; }
+  .vs-line { width: 1px; height: 60px; background: var(--border); }
+
+  .metrics-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; border-top: 1px solid var(--border); }
+  .metric { background: var(--surface2); border-radius: 8px; padding: 12px; text-align: center; }
+  .metric-val { font-family: var(--display); font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; transition: all 0.5s; }
+  .metric-val.bad  { color: var(--red); }
+  .metric-val.good { color: var(--green); }
+  .metric-label { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .controls { max-width: 1100px; margin: 0 auto 40px; padding: 0 40px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+  .run-btn { background: var(--orange); color: white; border: none; border-radius: 10px; padding: 14px 36px; font-family: var(--display); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; letter-spacing: 0.3px; }
+  .run-btn:hover   { background: var(--orange-light); transform: translateY(-1px); }
+  .run-btn:active  { transform: translateY(0); }
+  .run-btn:disabled { background: var(--muted); cursor: not-allowed; transform: none; }
+
+  .reset-btn { background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 10px; padding: 14px 28px; font-family: var(--body); font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .reset-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  .outcome { max-width: 1100px; margin: 0 auto 40px; padding: 0 40px; opacity: 0; transform: translateY(16px); transition: all 0.5s; }
+  .outcome.show { opacity: 1; transform: translateY(0); }
+  .outcome-inner { border-radius: 14px; padding: 28px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; border: 1px solid var(--border); background: var(--surface); }
+  .outcome-title { font-family: var(--display); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .outcome-title.red   { color: var(--red); }
+  .outcome-title.green { color: var(--green); }
+  .outcome-text { font-size: 14px; color: var(--muted); line-height: 1.7; font-weight: 300; }
+  .outcome-text strong { color: var(--text); font-weight: 500; }
+
+  /* ── Research section ── */
+  .research-section { max-width: 1100px; margin: 0 auto 60px; padding: 0 40px; opacity: 0; transform: translateY(16px); transition: all 0.5s 0.3s; }
+  .research-section.show { opacity: 1; transform: translateY(0); }
+  .research-header { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .research-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .research-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .research-label { font-family: var(--mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--orange); margin-bottom: 8px; }
+  .research-msg { font-size: 13px; color: var(--muted); line-height: 1.65; font-weight: 300; }
+
+  .scenario-desc { max-width: 1100px; margin: 0 auto 32px; padding: 0 40px; }
+  .desc-card { background: var(--orange-dim); border: 1px solid rgba(224,90,30,0.3); border-radius: 12px; padding: 18px 24px; display: flex; align-items: flex-start; gap: 16px; }
+  .desc-icon  { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+  .desc-title { font-family: var(--display); font-size: 15px; font-weight: 700; color: var(--orange-light); margin-bottom: 4px; }
+  .desc-body  { font-size: 13px; color: rgba(248,200,160,0.7); line-height: 1.6; font-weight: 300; }
+
+  .speed-row  { display: flex; align-items: center; gap: 10px; }
+  .speed-label { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.5px; }
+  .speed-btn  { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 6px 12px; font-family: var(--mono); font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .speed-btn.active, .speed-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  @keyframes pulse-red   { 0%, 100% { opacity: 1; }                           50% { opacity: 0.4; } }
+  @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 8px var(--green); }     50% { box-shadow: 0 0 20px var(--green); } }
+  .running .sys-dot.red   { animation: pulse-red   0.8s infinite; }
+  .running .sys-dot.green { animation: pulse-green 1.2s infinite; }
+
+  .progress-bar  { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin: 0 16px 16px; }
+  .progress-fill { height: 100%; width: 0%; border-radius: 2px; transition: width 0.3s; }
+  .progress-fill.red   { background: var(--red); }
+  .progress-fill.green { background: var(--green); }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag { font-family: var(--mono); font-size: 10px; padding: 3px 8px; border-radius: 4px; border: 1px solid; letter-spacing: 0.3px; }
+  .tag.r { color: #FF8A80; border-color: rgba(229,57,53,0.4); background: rgba(229,57,53,0.08); }
+  .tag.g { color: #80FFB8; border-color: rgba(46,204,141,0.4); background: rgba(46,204,141,0.08); }
+
+  @media (max-width: 700px) {
+    .research-cards { grid-template-columns: 1fr; }
+    .stage { grid-template-columns: 1fr; }
+    .vs-col { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="everything">
+
+<header>
+  <div class="logo">
+    <div class="pwc-mark">pwc</div>
+    <div>
+      <div class="logo-text">Agentic AI Stress Simulator</div>
+      <div class="logo-sub">Whitepaper 4.0 — Financial Services</div>
+    </div>
+  </div>
+  <div class="header-pill">LIVE DEMO</div>
+</header>
+
+<div class="hero">
+  <div class="hero-eyebrow">The autonomy-risk paradox</div>
+  <h1 class="hero-title">What happens when<br>agentic AI <span>breaks?</span></h1>
+  <p class="hero-sub">Pick a real-world stress scenario. Watch what happens to an ungoverned AI system — then watch how architectural safeguards change everything.</p>
+</div>
+
+<div class="scenario-bar">
+  <button class="sc-btn active" onclick="selectScenario('volatility', this)">
+    <span class="sc-icon">&#x1F4C9;</span>
+    <span class="sc-info">
+      <span class="sc-name">Market Volatility Shock</span>
+      <span class="sc-tag">CREDIT RISK &middot; UNDERWRITING</span>
+    </span>
+  </button>
+  <button class="sc-btn" onclick="selectScenario('data', this)">
+    <span class="sc-icon">&#x1F480;</span>
+    <span class="sc-info">
+      <span class="sc-name">Data Integrity Failure</span>
+      <span class="sc-tag">FRAUD &middot; CASCADE ERROR</span>
+    </span>
+  </button>
+  <button class="sc-btn" onclick="selectScenario('ict', this)">
+    <span class="sc-icon">&#x1F50C;</span>
+    <span class="sc-info">
+      <span class="sc-name">Third-Party ICT Outage</span>
+      <span class="sc-tag">PAYMENTS &middot; COMPLIANCE</span>
+    </span>
+  </button>
+  <button class="sc-btn" onclick="selectScenario('liquidity', this)">
+    <span class="sc-icon">&#x1F30A;</span>
+    <span class="sc-info">
+      <span class="sc-name">Liquidity Disruption</span>
+      <span class="sc-tag">CAPITAL &middot; TREASURY</span>
+    </span>
+  </button>
+</div>
+
+<div class="scenario-desc">
+  <div class="desc-card">
+    <div class="desc-icon" id="desc-icon"></div>
+    <div>
+      <div class="desc-title" id="desc-title"></div>
+      <div class="desc-body"  id="desc-body"></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="speed-row">
+    <span class="speed-label">SPEED</span>
+    <button class="speed-btn active" onclick="setSpeed(1, this)">1&times;</button>
+    <button class="speed-btn"        onclick="setSpeed(2, this)">2&times;</button>
+    <button class="speed-btn"        onclick="setSpeed(4, this)">4&times;</button>
+  </div>
+  <button class="run-btn"   id="runBtn" onclick="runSimulation()">&#9654; Run Simulation</button>
+  <button class="reset-btn"            onclick="resetSim()">&#8635; Reset</button>
+</div>
+
+<div class="stage" id="stage">
+
+  <!-- Ungoverned -->
+  <div class="system-col ungoverned">
+    <div class="sys-header">
+      <div class="sys-dot red"></div>
+      <div>
+        <div class="sys-label red">Ungoverned Agent</div>
+        <div class="sys-sublabel">NO POLICY CONSTRAINTS &middot; NO KILL SWITCH</div>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill red" id="prog-bad"></div></div>
+    <div class="event-log" id="log-bad"></div>
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-val bad" id="met-bad-1">&#8212;</div>
+        <div class="metric-label"  id="met-bad-1-label">Exposure</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val bad" id="met-bad-2">&#8212;</div>
+        <div class="metric-label"  id="met-bad-2-label">Systems Affected</div>
+      </div>
+    </div>
+    <div class="tag-row" style="padding:0 16px 16px" id="tags-bad"></div>
+  </div>
+
+  <!-- VS -->
+  <div class="vs-col">
+    <div class="vs-badge">VS</div>
+    <div class="vs-line"></div>
+  </div>
+
+  <!-- Governed -->
+  <div class="system-col governed">
+    <div class="sys-header">
+      <div class="sys-dot green"></div>
+      <div>
+        <div class="sys-label green">Governed Agent</div>
+        <div class="sys-sublabel">BOUNDED AUTONOMY &middot; AUDIT TRAILS &middot; ESCALATION</div>
+      </div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill green" id="prog-good"></div></div>
+    <div class="event-log" id="log-good"></div>
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-val good" id="met-good-1">&#8212;</div>
+        <div class="metric-label"   id="met-good-1-label">Exposure</div>
+      </div>
+      <div class="metric">
+        <div class="metric-val good" id="met-good-2">&#8212;</div>
+        <div class="metric-label"   id="met-good-2-label">Systems Affected</div>
+      </div>
+    </div>
+    <div class="tag-row" style="padding:0 16px 16px" id="tags-good"></div>
+  </div>
+
+</div><!-- /stage -->
+
+<!-- Outcome -->
+<div class="outcome" id="outcome">
+  <div class="outcome-inner">
+    <div class="outcome-side">
+      <div class="outcome-title red">What went wrong</div>
+      <div class="outcome-text" id="out-bad-text"></div>
+    </div>
+    <div class="outcome-side">
+      <div class="outcome-title green">What saved the system</div>
+      <div class="outcome-text" id="out-good-text"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Research -->
+<div class="research-section" id="research">
+  <div class="research-header">&#8627; Why this scenario is realistic</div>
+  <div class="research-cards" id="research-cards"></div>
+</div>
+
+</div><!-- /everything -->
+
+<script>
+const SCENARIOS = {
+  volatility: {
+    icon: '\u{1F4C9}', title: 'Market Volatility Shock',
+    desc: 'A sudden 18% market drop triggers abnormal signals across all data feeds. The agentic underwriting system continues processing loan applications in real time \u2014 but without volatility thresholds embedded, it cannot tell the crash from normal fluctuation.',
+    bad: [
+      { t: '00:01', type: 'info',    msg: 'Market volatility spike detected \u2014 VIX +340%' },
+      { t: '00:03', type: 'warning', msg: 'Underwriting agent: no volatility threshold configured' },
+      { t: '00:05', type: 'error',   msg: 'Agent continues approving loans at pre-crash risk parameters' },
+      { t: '00:09', type: 'error',   msg: '47 loan approvals issued: avg. $82K each' },
+      { t: '00:14', type: 'cascade', msg: '\u26A0 Risk models fed stale data \u2014 credit exposure growing' },
+      { t: '00:18', type: 'cascade', msg: '\u26A0 Portfolio stress breaches internal limit: +$3.9M exposure' },
+      { t: '00:22', type: 'cascade', msg: '\u26A0 Cascade: Collections agent triggered on new defaults' },
+      { t: '00:27', type: 'error',   msg: 'Human review requested \u2014 23 min queue backlog' },
+      { t: '00:31', type: 'cascade', msg: '\u26A0 Regulatory reporting window missed \u2014 compliance breach' },
+      { t: '00:35', type: 'error',   msg: 'HALT: Manual intervention required. Damage: $3.9M exposure' },
+    ],
+    good: [
+      { t: '00:01', type: 'info',       msg: 'Market volatility spike detected \u2014 VIX +340%' },
+      { t: '00:02', type: 'checkpoint', msg: '\u2713 Volatility threshold policy triggered (>15% VIX delta)' },
+      { t: '00:03', type: 'checkpoint', msg: '\u2713 Underwriting agent paused \u2014 policy boundary enforced' },
+      { t: '00:04', type: 'success',    msg: 'Human escalation alert sent to Risk Officer (auto-routed)' },
+      { t: '00:06', type: 'checkpoint', msg: '\u2713 In-flight approvals flagged for manual review (4 pending)' },
+      { t: '00:08', type: 'success',    msg: 'Audit log frozen \u2014 all decisions traceable to data source' },
+      { t: '00:12', type: 'checkpoint', msg: '\u2713 Fallback: Static underwriting rules activated' },
+      { t: '00:18', type: 'success',    msg: 'Risk Officer reviews 4 flagged cases \u2014 3 deferred, 1 approved' },
+      { t: '00:22', type: 'checkpoint', msg: '\u2713 Regulatory reporting: auto-incident log filed on time' },
+      { t: '00:28', type: 'success',    msg: 'CONTAINED: Exposure $0 additional. Agent resumes under new params' },
+    ],
+    badMetrics: ['$3.9M', '4 systems'], goodMetrics: ['$0 added', '0 cascade'],
+    badMetricLabels: ['credit exposure', 'cascades'], goodMetricLabels: ['additional exposure', 'systems failed'],
+    badTags:  ['NO THRESHOLD', 'CASCADE ERROR', 'COMPLIANCE BREACH', 'MANUAL HALT'],
+    goodTags: ['POLICY ENFORCED', 'HUMAN ESCALATED', 'AUDIT TRAIL', 'CONTAINED'],
+    outBad:  '<strong>No volatility threshold</strong> meant the agent kept approving loans at pre-crash parameters. 47 approvals worth $3.9M in exposure were issued before a human noticed.',
+    outGood: '<strong>An embedded policy constraint</strong> paused the agent the moment volatility exceeded the 15% VIX delta threshold. Only 4 applications were in-flight \u2014 all reviewed and handled without cascade or breach.',
+    research: [
+      { label: 'Real case',       msg: "NCUA (2023): A US credit union's AI loan system was cited for approving loans without income verification or standard underwriting steps. Same root cause \u2014 no policy boundary on what the agent could approve autonomously." },
+      { label: 'Regulator signal', msg: 'FSOC Annual Report (2024): Explicitly calls for \u201cenhanced human oversight\u201d of AI systems making real-time credit decisions, especially during market stress events.' },
+      { label: 'So what',          msg: "For consultants: the governance fix here isn't complex. It's a single threshold check before the agent acts. The cost of not having it is disproportionate \u2014 $3.9M exposure vs. a config change." },
+    ],
+  },
+
+  data: {
+    icon: '\u{1F480}', title: 'Data Integrity Failure',
+    desc: 'Corrupted transaction records enter the fraud investigation pipeline. A multi-step fraud agent processes thousands of records without a validation checkpoint \u2014 errors compound invisibly across 5 downstream systems before a human sees the output.',
+    bad: [
+      { t: '00:01', type: 'info',    msg: 'Batch data ingestion: 84,000 transaction records' },
+      { t: '00:02', type: 'warning', msg: 'Data corruption: 2.1% of records have null merchant_id' },
+      { t: '00:04', type: 'error',   msg: 'Fraud agent: no input validation checkpoint configured' },
+      { t: '00:07', type: 'error',   msg: 'Agent classifies 1,764 null-merchant records as "low risk"' },
+      { t: '00:10', type: 'cascade', msg: '\u26A0 AML system receives corrupted classifications' },
+      { t: '00:13', type: 'cascade', msg: '\u26A0 Customer alert suppression: 1,764 fraud alerts blocked' },
+      { t: '00:16', type: 'cascade', msg: '\u26A0 Regulatory report filed with corrupted fraud rates' },
+      { t: '00:20', type: 'cascade', msg: '\u26A0 Portfolio risk model ingests false data \u2014 model drift begins' },
+      { t: '00:25', type: 'error',   msg: 'Compliance team discovers error during manual spot check' },
+      { t: '00:30', type: 'error',   msg: 'BREACH: 5 systems affected. Regulatory restatement required' },
+    ],
+    good: [
+      { t: '00:01', type: 'info',       msg: 'Batch data ingestion: 84,000 transaction records' },
+      { t: '00:02', type: 'warning',    msg: 'Data corruption: 2.1% of records have null merchant_id' },
+      { t: '00:03', type: 'checkpoint', msg: '\u2713 Input validation gate: null-field check triggered' },
+      { t: '00:04', type: 'checkpoint', msg: '\u2713 1,764 records quarantined \u2014 agent paused on bad batch' },
+      { t: '00:05', type: 'success',    msg: 'Data quality alert: engineering team notified automatically' },
+      { t: '00:07', type: 'checkpoint', msg: '\u2713 Clean 82,236 records processed with full audit trail' },
+      { t: '00:10', type: 'success',    msg: 'AML system receives validated data only \u2014 no contamination' },
+      { t: '00:14', type: 'checkpoint', msg: '\u2713 Quarantined batch reprocessed after source fix (82 min)' },
+      { t: '00:18', type: 'success',    msg: 'Regulatory report filed on clean data \u2014 no restatement needed' },
+      { t: '00:22', type: 'success',    msg: 'CONTAINED: 0 systems affected. Full traceability maintained' },
+    ],
+    badMetrics: ['5 systems', '1,764 alerts'], goodMetrics: ['0 systems', '0 alerts'],
+    badMetricLabels: ['cascades', 'suppressed'], goodMetricLabels: ['systems affected', 'blocked alerts'],
+    badTags:  ['NO VALIDATION', 'CASCADE \u00d75', 'REGULATORY BREACH', 'MODEL DRIFT'],
+    goodTags: ['INPUT GATE', 'QUARANTINE', 'CLEAN PIPELINE', 'FULL TRACE'],
+    outBad:  '<strong>No input validation</strong> allowed corrupted records to flow through 5 downstream systems. 1,764 fraud alerts were suppressed \u2014 discovered only during a manual spot check.',
+    outGood: '<strong>An input validation checkpoint</strong> quarantined the corrupted batch before it touched any downstream system. Total delay: 82 minutes, zero regulatory impact.',
+    research: [
+      { label: 'Real case',        msg: "FINRA vs. Brex Treasury (Aug 2024, $900K fine): Brex's AML algorithm processed accounts where required fields \u2014 dates of birth, ID numbers \u2014 were missing. Over $15M in transactions cleared through accounts that should have been blocked." },
+      { label: 'Regulator standard', msg: "FINRA's 2024 Oversight Report requires AML systems to be \u201creasonably designed\u201d \u2014 which regulators interpret as including input completeness checks before processing begins." },
+      { label: 'So what',            msg: 'For consultants: the 82-minute delay in the governed scenario is the cost of doing this right. The restatement, AML retrospective review, and regulatory filing in the ungoverned scenario likely cost 10\u201350x that in hours and penalties.' },
+    ],
+  },
+
+  ict: {
+    icon: '\u{1F50C}', title: 'Third-Party ICT Outage',
+    desc: "The bank's primary external API provider goes offline without warning. A payment and compliance agent dependent on this API has no fallback procedure \u2014 and keeps processing transactions while silently skipping sanctions screening.",
+    bad: [
+      { t: '00:01', type: 'info',    msg: 'External API: identity verification service \u2014 timeout' },
+      { t: '00:02', type: 'warning', msg: 'API retry loop: 3 attempts, all failed (503 error)' },
+      { t: '00:04', type: 'error',   msg: 'Payment agent: no fallback procedure configured' },
+      { t: '00:06', type: 'error',   msg: 'Agent continues processing \u2014 skips sanctions screening' },
+      { t: '00:09', type: 'cascade', msg: '\u26A0 312 payments processed without sanctions check' },
+      { t: '00:13', type: 'cascade', msg: '\u26A0 Compliance log shows processing gap \u2014 regulatory exposure' },
+      { t: '00:17', type: 'cascade', msg: '\u26A0 AML retrospective review required \u2014 8-hour manual task' },
+      { t: '00:21', type: 'error',   msg: 'DORA non-compliance flagged: no ICT resilience plan on record' },
+      { t: '00:26', type: 'cascade', msg: '\u26A0 Customer SLA breach: 847 payments delayed >2hr' },
+      { t: '00:30', type: 'error',   msg: 'FAILURE: Regulatory breach + SLA breach + AML gap' },
+    ],
+    good: [
+      { t: '00:01', type: 'info',       msg: 'External API: identity verification service \u2014 timeout' },
+      { t: '00:02', type: 'checkpoint', msg: '\u2713 Fallback: secondary API provider activated (2.1s switchover)' },
+      { t: '00:03', type: 'success',    msg: 'Payment agent continues on fallback \u2014 no processing gap' },
+      { t: '00:05', type: 'checkpoint', msg: '\u2713 Incident log auto-filed under DORA Article 17 framework' },
+      { t: '00:07', type: 'checkpoint', msg: '\u2713 Sanctions screening maintained via cached rules (15-min window)' },
+      { t: '00:10', type: 'success',    msg: 'Technology risk team alerted \u2014 root cause investigation begins' },
+      { t: '00:15', type: 'checkpoint', msg: '\u2713 Primary API restored \u2014 agent switches back automatically' },
+      { t: '00:18', type: 'success',    msg: 'Full audit trail for outage window \u2014 0 processing gaps' },
+      { t: '00:22', type: 'checkpoint', msg: '\u2713 DORA compliance maintained \u2014 RTO within 15-min threshold' },
+      { t: '00:25', type: 'success',    msg: 'CONTAINED: 0 regulatory flags. 0 SLA breaches. Full trace.' },
+    ],
+    badMetrics: ['312 payments', 'DORA breach'], goodMetrics: ['0 gaps', 'DORA OK'],
+    badMetricLabels: ['unscreened', 'compliance'], goodMetricLabels: ['processing gaps', 'compliance status'],
+    badTags:  ['NO FALLBACK', 'SANCTIONS GAP', 'DORA BREACH', 'SLA BREACH'],
+    goodTags: ['FALLBACK API', 'CACHED RULES', 'DORA COMPLIANT', 'FULL TRACE'],
+    outBad:  '<strong>No fallback procedure</strong> meant the agent kept processing payments without sanctions screening. 312 payments were sent unchecked \u2014 triggering DORA non-compliance and 847 customer SLA breaches.',
+    outGood: '<strong>A pre-configured fallback API</strong> activated within 2 seconds. DORA recovery time objective: met. Zero gaps in the audit trail.',
+    research: [
+      { label: 'Real case',    msg: 'TSB Bank IT Migration (UK, 2018): A botched third-party system cutover locked 1.9M customers out and cost \u00a3330M in remediation. The FCA and PRA fined TSB \u00a348.7M in 2022 specifically for inadequate operational resilience planning \u2014 no tested fallback, no RTO.' },
+      { label: 'New regulation', msg: 'DORA (EU, live Jan 2025): All EU financial entities must now document ICT fallback procedures, test them annually, and meet defined recovery time objectives. Non-compliance is a supervisory breach, not just a best practice gap.' },
+      { label: 'So what',        msg: "For consultants: DORA makes this scenario a compliance deadline, not just a risk conversation. Clients without documented fallback procedures for AI-dependent workflows are already non-compliant. The governed side of this demo is essentially a DORA checklist." },
+    ],
+  },
+
+  liquidity: {
+    icon: '\u{1F30A}', title: 'Liquidity Disruption',
+    desc: "An overnight funding market freeze causes real-time liquidity signals to diverge sharply from the bank's internal models. A treasury agent managing intraday positions continues executing based on stale model assumptions.",
+    bad: [
+      { t: '00:01', type: 'info',    msg: 'Overnight repo market: funding freeze across 7 counterparties' },
+      { t: '00:03', type: 'warning', msg: 'Internal liquidity model: 4-hour update lag (stale)' },
+      { t: '00:05', type: 'error',   msg: 'Treasury agent: continues intraday trades on stale LCR data' },
+      { t: '00:08', type: 'cascade', msg: '\u26A0 LCR falls below 100% threshold \u2014 agent unaware' },
+      { t: '00:12', type: 'cascade', msg: '\u26A0 3 repo trades executed that worsen liquidity position' },
+      { t: '00:16', type: 'cascade', msg: '\u26A0 Liquidity Coverage Ratio: 88% \u2014 regulatory minimum breached' },
+      { t: '00:20', type: 'error',   msg: 'Capital Markets desk flags position \u2014 2hr after breach' },
+      { t: '00:24', type: 'cascade', msg: '\u26A0 Emergency liquidity injection required: \u20ac420M' },
+      { t: '00:28', type: 'error',   msg: 'Regulator notified \u2014 24hr mandatory reporting triggered' },
+      { t: '00:32', type: 'error',   msg: 'BREACH: LCR violation + emergency funding + regulator contact' },
+    ],
+    good: [
+      { t: '00:01', type: 'info',       msg: 'Overnight repo market: funding freeze across 7 counterparties' },
+      { t: '00:02', type: 'checkpoint', msg: '\u2713 Real-time liquidity monitor: stress signal threshold breached' },
+      { t: '00:03', type: 'checkpoint', msg: '\u2713 Treasury agent paused \u2014 stale model flag detected (>30 min lag)' },
+      { t: '00:04', type: 'success',    msg: 'Head of Treasury alerted \u2014 manual position review initiated' },
+      { t: '00:06', type: 'checkpoint', msg: '\u2713 Pending trades (3) held in queue \u2014 no execution during review' },
+      { t: '00:10', type: 'success',    msg: 'Real-time liquidity feed activated \u2014 model refreshed' },
+      { t: '00:14', type: 'checkpoint', msg: '\u2713 LCR recalculated: 104% \u2014 above threshold, no breach' },
+      { t: '00:18', type: 'success',    msg: 'Treasury reviews 3 queued trades \u2014 2 cancelled, 1 modified' },
+      { t: '00:22', type: 'checkpoint', msg: '\u2713 Proactive regulator notification filed (pre-emptive, not breach)' },
+      { t: '00:26', type: 'success',    msg: 'CONTAINED: LCR maintained. No emergency funding. No breach.' },
+    ],
+    badMetrics: ['\u20ac420M', 'LCR 88%'], goodMetrics: ['\u20ac0', 'LCR 104%'],
+    badMetricLabels: ['emergency inject', 'coverage ratio'], goodMetricLabels: ['emergency funding', 'coverage ratio'],
+    badTags:  ['STALE MODEL', 'LCR BREACH', 'EMERGENCY FUND', 'REGULATOR BREACH'],
+    goodTags: ['REAL-TIME FEED', 'TRADE QUEUE', 'LCR SAFE', 'PRE-EMPTIVE FILING'],
+    outBad:  '<strong>Stale liquidity model data</strong> meant the treasury agent kept trading for 2 hours after the repo freeze. LCR dropped to 88% \u2014 triggering \u20ac420M in emergency funding and mandatory regulator notification.',
+    outGood: '<strong>A real-time stress signal monitor</strong> paused the treasury agent when it detected model lag above 30 minutes. LCR stayed at 104% \u2014 never threatened.',
+    research: [
+      { label: 'Real case',    msg: 'Two Sigma (SEC, settled Jan 2025, $90M penalty + $165M client repayment): An algorithmic trading system acted on stale or tampered model inputs, undetected, for nearly two years \u2014 producing $165M in losses. The SEC found the firm had no supervisory review step before model inputs were acted upon.' },
+      { label: 'Pattern match', msg: "The Silicon Valley Bank collapse (2023) involved a related failure: risk models that weren't updated to reflect rising rate conditions. Automated decisions based on outdated assumptions accelerated the liquidity crisis once it started." },
+      { label: 'So what',       msg: 'For consultants: the Two Sigma case sets a clear precedent \u2014 regulators will hold firms accountable when automated systems act on unvalidated inputs, even if the data issue originated upstream. \u201cThe model told us to\u201d is not a defence.' },
+    ],
+  }
+};
+
+let currentScenario = 'volatility';
+let speedMultiplier  = 1;
+let isRunning        = false;
+let timers           = [];
+
+function selectScenario(key, btn) {
+  if (isRunning) return;
+  currentScenario = key;
+  document.querySelectorAll('.sc-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const s = SCENARIOS[key];
+  document.getElementById('desc-icon').textContent  = s.icon;
+  document.getElementById('desc-title').textContent = s.title;
+  document.getElementById('desc-body').textContent  = s.desc;
+  resetSim();
+}
+
+function setSpeed(v, btn) {
+  speedMultiplier = v;
+  document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function resetSim() {
+  timers.forEach(clearTimeout);
+  timers    = [];
+  isRunning = false;
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled  = false;
+  runBtn.textContent = '\u25B6 Run Simulation';
+
+  ['log-bad','log-good'].forEach(id => document.getElementById(id).innerHTML = '');
+  ['prog-bad','prog-good'].forEach(id => document.getElementById(id).style.width = '0%');
+  ['met-bad-1','met-bad-2','met-good-1','met-good-2'].forEach(id => document.getElementById(id).textContent = '\u2014');
+  ['tags-bad','tags-good','research-cards'].forEach(id => document.getElementById(id).innerHTML = '');
+  document.getElementById('outcome').classList.remove('show');
+  document.getElementById('research').classList.remove('show');
+  document.getElementById('stage').classList.remove('running');
+}
+
+function runSimulation() {
+  if (isRunning) return;
+  isRunning = true;
+  const s = SCENARIOS[currentScenario];
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled    = true;
+  runBtn.textContent = '\u23F3 Running...';
+  document.getElementById('stage').classList.add('running');
+  document.getElementById('outcome').classList.remove('show');
+  document.getElementById('research').classList.remove('show');
+
+  const BASE = 2200 / speedMultiplier;
+
+  s.bad.forEach((entry, i) => {
+    timers.push(setTimeout(() => {
+      addEntry('log-bad', entry);
+      document.getElementById('prog-bad').style.width =
+        Math.round(((i + 1) / s.bad.length) * 100) + '%';
+    }, BASE * i));
+  });
+
+  s.good.forEach((entry, i) => {
+    timers.push(setTimeout(() => {
+      addEntry('log-good', entry);
+      document.getElementById('prog-good').style.width =
+        Math.round(((i + 1) / s.good.length) * 100) + '%';
+    }, BASE * i));
+  });
+
+  const total = BASE * (Math.max(s.bad.length, s.good.length) - 1) + 800;
+
+  timers.push(setTimeout(() => {
+    // Metrics
+    document.getElementById('met-bad-1').textContent       = s.badMetrics[0];
+    document.getElementById('met-bad-2').textContent       = s.badMetrics[1];
+    document.getElementById('met-good-1').textContent      = s.goodMetrics[0];
+    document.getElementById('met-good-2').textContent      = s.goodMetrics[1];
+    document.getElementById('met-bad-1-label').textContent  = s.badMetricLabels[0];
+    document.getElementById('met-bad-2-label').textContent  = s.badMetricLabels[1];
+    document.getElementById('met-good-1-label').textContent = s.goodMetricLabels[0];
+    document.getElementById('met-good-2-label').textContent = s.goodMetricLabels[1];
+
+    // Tags
+    const tb = document.getElementById('tags-bad');
+    s.badTags.forEach(tag => {
+      const el = document.createElement('span');
+      el.className   = 'tag r';
+      el.textContent = tag;
+      tb.appendChild(el);
+    });
+    const tg = document.getElementById('tags-good');
+    s.goodTags.forEach(tag => {
+      const el = document.createElement('span');
+      el.className   = 'tag g';
+      el.textContent = tag;
+      tg.appendChild(el);
+    });
+
+    // Outcome
+    document.getElementById('out-bad-text').innerHTML  = s.outBad;
+    document.getElementById('out-good-text').innerHTML = s.outGood;
+    document.getElementById('outcome').classList.add('show');
+
+    // Research cards
+    const rc = document.getElementById('research-cards');
+    s.research.forEach(r => {
+      const card       = document.createElement('div');
+      card.className   = 'research-card';
+      card.innerHTML   =
+        '<div class="research-label">' + r.label + '</div>' +
+        '<div class="research-msg">'   + r.msg   + '</div>';
+      rc.appendChild(card);
+    });
+    document.getElementById('research').classList.add('show');
+
+    runBtn.textContent = '\u2713 Complete';
+    document.getElementById('stage').classList.remove('running');
+    isRunning = false;
+  }, total));
+}
+
+function addEntry(logId, entry) {
+  const log = document.getElementById(logId);
+  const el  = document.createElement('div');
+  el.className = 'log-entry ' + entry.type;
+  el.innerHTML = '<span class="log-time">' + entry.t + '</span>' + entry.msg;
+  log.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  log.scrollTop = log.scrollHeight;
+}
+
+// Init description on page load
+(function () {
+  const s = SCENARIOS[currentScenario];
+  document.getElementById('desc-icon').textContent  = s.icon;
+  document.getElementById('desc-title').textContent = s.title;
+  document.getElementById('desc-body').textContent  = s.desc;
+})();
+</script>
+</body>
+</html>
